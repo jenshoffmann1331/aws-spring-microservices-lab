@@ -18,6 +18,9 @@ Parameters:
   ClusterAdminArn:
     Type: String
 
+  GitHubActionsRoleArn:
+    Type: String
+
   KubernetesVersion:
     Type: String
     Default: "1.34"
@@ -131,6 +134,18 @@ Resources:
     Properties:
       ClusterName: !Ref ClusterName
       PrincipalArn: !Ref ClusterAdminArn
+      Type: STANDARD
+      AccessPolicies:
+        - PolicyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+          AccessScope:
+            Type: cluster
+
+  GitHubActionsAccessEntry:
+    Type: AWS::EKS::AccessEntry
+    DependsOn: EksCluster
+    Properties:
+      ClusterName: !Ref ClusterName
+      PrincipalArn: !Ref GitHubActionsRoleArn
       Type: STANDARD
       AccessPolicies:
         - PolicyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy

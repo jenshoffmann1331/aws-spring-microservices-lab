@@ -51,4 +51,5 @@ jobs:
               ProjectName="$PROJECT_NAME" \
               Environment="$ENV" \
               ClusterName="${CLUSTER_NAME}" \
-              ClusterAdminArn="${{ secrets.CLUSTER_ADMIN_ARN }}"
+              ClusterAdminArn="${{ secrets.CLUSTER_ADMIN_ARN }}" \
+              GitHubActionsRoleArn="${{ secrets.AWS_ROLE_TO_ASSUME }}"
