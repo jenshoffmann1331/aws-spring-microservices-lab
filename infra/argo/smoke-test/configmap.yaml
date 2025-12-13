@@ -4,4 +4,4 @@ metadata:
   name: smoke-config
   namespace: smoke-test
 data:
-  message: "hello from gitops v1"
+  message: "hello from gitops v999"
