@@ -15,6 +15,9 @@ Parameters:
     Type: String
     Default: microservices-lab-dev
 
+  ClusterAdminArn:
+    Type: String
+
   KubernetesVersion:
     Type: String
     Default: "1.34"
@@ -82,6 +85,11 @@ Resources:
       Name: !Ref ClusterName
       Version: !Ref KubernetesVersion
       RoleArn: !GetAtt EksClusterRole.Arn
+
+      AccessConfig:
+        AuthenticationMode: API_AND_CONFIG_MAP
+        BootstrapClusterCreatorAdminPermissions: true
+
       ResourcesVpcConfig:
         EndpointPrivateAccess: true
         EndpointPublicAccess: true
@@ -116,6 +124,18 @@ Resources:
       Tags:
         Project: !Ref ProjectName
         Environment: !Ref Environment
+
+  EksAdminAccessEntry:
+    Type: AWS::EKS::AccessEntry
+    DependsOn: EksCluster
+    Properties:
+      ClusterName: !Ref ClusterName
+      PrincipalArn: !Ref ClusterAdminArn
+      Type: STANDARD
+      AccessPolicies:
+        - PolicyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+          AccessScope:
+            Type: cluster
 
 Outputs:
   ClusterName:

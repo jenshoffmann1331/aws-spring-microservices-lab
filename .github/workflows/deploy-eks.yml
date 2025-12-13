@@ -49,4 +49,5 @@ jobs:
             --parameter-overrides \
               ProjectName="$PROJECT_NAME" \
               Environment="$ENV" \
-              ClusterName="${CLUSTER_NAME}"
+              ClusterName="${CLUSTER_NAME}" \
+              ClusterAdminArn="${{ secrets.CLUSTER_ADMIN_ARN }}"
