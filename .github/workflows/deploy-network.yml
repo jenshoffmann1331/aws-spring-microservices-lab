@@ -1,4 +1,5 @@
-name: deploy-network.yml
+name: Deploy Network (CloudFormation)
+
 on:
   workflow_dispatch:
     inputs:
