@@ -36,7 +36,7 @@ jobs:
         run: |
           ENV="${{ inputs.environment || 'dev' }}"
           REGION="${{ inputs.region || 'eu-central-1' }}"
-          STACK_NAME="${PROJECT_NAME}-${ENV}-network
+          STACK_NAME="${PROJECT_NAME}-${ENV}-network"
           
           aws cloudformation deploy \
             --region "$REGION" \
