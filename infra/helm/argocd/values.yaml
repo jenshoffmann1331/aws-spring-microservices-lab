@@ -1,0 +1,17 @@
+# Keep it simple: Cluster-internal only
+server:
+  service:
+    type: ClusterIP
+
+# Avoid surprises on small clusters
+controller:
+  replicas: 1
+repoServer:
+  replicas: 1
+applicationSet:
+  replicaCount: 1
+
+# Optional: makes rollouts nicer for GitOps
+configs:
+  params:
+    server.insecure: "true"
