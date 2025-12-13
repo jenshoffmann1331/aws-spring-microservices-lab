@@ -9,6 +9,23 @@ Ein persönlicher Playground für:
 
 Dieses Repo ist als Lern- und Experimentierumgebung gedacht, nicht als Produktionssetup.
 
+## GitHub Identity Provider in AWS IAM anlegen
+
+```bash
+./scripts/deploy-github-identity-provider.sh
+```
+
+## CloudFormation Service Rolle anlegen
+
+```bash
+./scripts/deploy-cfn-service-role.sh
+```
+
+## GitHub Deploy Rolle anlegen
+
+```bash
+./scripts/deploy-github-deploy-role.sh
+```
 
 ## Kubectl einrichten
 

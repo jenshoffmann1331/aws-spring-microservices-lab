@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "OIDC provider for GitHub Actions (token.actions.githubusercontent.com)"
+
+Parameters:
+  OidcUrl:
+    Type: String
+    Default: https://token.actions.githubusercontent.com
+
+  Audience:
+    Type: String
+    Default: sts.amazonaws.com
+
+  ThumbprintSha1:
+    Type: String
+    Description: "SHA1 thumbprint (no colons) of the top intermediate CA cert"
+    # Beispiel: 990F4193972F2BECF12DDEDA5237F9C952F20D9E
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: !Ref OidcUrl
+      ClientIdList:
+        - !Ref Audience
+      ThumbprintList:
+        - !Ref ThumbprintSha1
+
+Outputs:
+  OidcProviderArn:
+    Value: !Ref GitHubOidcProvider

@@ -45,6 +45,7 @@ jobs:
             --stack-name "$STACK_NAME" \
             --template-file infra/cloudformation/eks/eks.yaml \
             --capabilities CAPABILITY_NAMED_IAM \
+            --role-arn ${{ secrets.AWS_CFN_ROLE }} \
             --no-fail-on-empty-changeset \
             --parameter-overrides \
               ProjectName="$PROJECT_NAME" \

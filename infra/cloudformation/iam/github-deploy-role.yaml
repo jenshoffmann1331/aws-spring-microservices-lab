@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "GitHub Actions deploy role (OIDC). Operates CloudFormation and passes a CFN service role."
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: microservices-lab
+  Environment:
+    Type: String
+    Default: dev
+
+  OidcProviderArn:
+    Type: String
+    Description: "ARN of IAM OIDC provider (token.actions.githubusercontent.com)"
+
+  GitHubOrg:
+    Type: String
+  GitHubRepo:
+    Type: String
+  GitHubBranch:
+    Type: String
+    Default: main
+
+  CloudFormationServiceRoleArn:
+    Type: String
+
+Resources:
+  GitHubDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-${Environment}-github-deploy-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref OidcProviderArn
+            Action: "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: "sts.amazonaws.com"
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/${GitHubBranch}"
+
+      Policies:
+        - PolicyName: !Sub "${ProjectName}-${Environment}-github-deploy-policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CloudFormationOperate
+                Effect: Allow
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:UpdateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:Describe*
+                  - cloudformation:Get*
+                  - cloudformation:List*
+                  - cloudformation:ValidateTemplate
+                Resource: "*"
+
+              - Sid: PassCfnServiceRole
+                Effect: Allow
+                Action: iam:PassRole
+                Resource: !Ref CloudFormationServiceRoleArn
+
+Outputs:
+  GitHubDeployRoleArn:
+    Value: !GetAtt GitHubDeployRole.Arn
