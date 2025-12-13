@@ -60,6 +60,7 @@ Resources:
                   - cloudformation:Get*
                   - cloudformation:List*
                   - cloudformation:ValidateTemplate
+                  - eks:DescribeCluster
                 Resource: "*"
 
               - Sid: PassCfnServiceRole
