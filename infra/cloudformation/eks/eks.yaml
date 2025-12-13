@@ -17,7 +17,7 @@ Parameters:
 
   KubernetesVersion:
     Type: String
-    Default: "1.29"
+    Default: "1.34"
 
   NodeInstanceType:
     Type: String
@@ -39,7 +39,6 @@ Resources:
   EksClusterRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${ProjectName}-${Environment}-eks-cluster-role"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -54,7 +53,6 @@ Resources:
   EksNodeRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${ProjectName}-${Environment}-eks-node-role"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -72,8 +70,8 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: !Sub "${ClusterName} - cluster security group"
-      VpcId: !ImportValue
-        Fn::Sub: "${ProjectName}-${Environment}-VpcId"
+      VpcId:
+        Fn::ImportValue: !Sub "${ProjectName}-${Environment}-VpcId"
       Tags:
         - Key: Name
           Value: !Sub "${ProjectName}-${Environment}-eks-cluster-sg"
@@ -90,13 +88,13 @@ Resources:
         SecurityGroupIds:
           - !Ref EksClusterSecurityGroup
         SubnetIds:
-          - !ImportValue
-            Fn::Sub: "${ProjectName}-${Environment}-PrivateSubnet1Id"
-          - !ImportValue
-            Fn::Sub: "${ProjectName}-${Environment}-PrivateSubnet2Id"
+          - Fn::ImportValue: !Sub "${ProjectName}-${Environment}-PrivateSubnet1Id"
+          - Fn::ImportValue: !Sub "${ProjectName}-${Environment}-PrivateSubnet2Id"
       Tags:
-        Project: !Ref ProjectName
-        Environment: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
 
   EksNodeGroup:
     Type: AWS::EKS::Nodegroup
@@ -105,17 +103,15 @@ Resources:
       ClusterName: !Ref ClusterName
       NodeRole: !GetAtt EksNodeRole.Arn
       Subnets:
-        - !ImportValue
-          Fn::Sub: "${ProjectName}-${Environment}-PrivateSubnet1Id"
-        - !ImportValue
-          Fn::Sub: "${ProjectName}-${Environment}-PrivateSubnet2Id"
+        - Fn::ImportValue: !Sub "${ProjectName}-${Environment}-PrivateSubnet1Id"
+        - Fn::ImportValue: !Sub "${ProjectName}-${Environment}-PrivateSubnet2Id"
       ScalingConfig:
         MinSize: !Ref NodeMinSize
         DesiredSize: !Ref NodeDesiredSize
         MaxSize: !Ref NodeMaxSize
       InstanceTypes:
         - !Ref NodeInstanceType
-      AmiType: AL2_x86_64
+      AmiType: AL2023_x86_64_STANDARD
       CapacityType: ON_DEMAND
       Tags:
         Project: !Ref ProjectName
