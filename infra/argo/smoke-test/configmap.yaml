@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smoke-config
+  namespace: smoke-test
+data:
+  message: "hello from gitops v1"

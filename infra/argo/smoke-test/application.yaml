@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: smoke-test
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/jenshoffmann1331/aws-spring-microservices-lab.git
+    targetRevision: main
+    path: infra/argo/smoke-test
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: smoke-test
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
