@@ -40,7 +40,7 @@ echo
 echo "Argo CD installed/updated."
 
 echo "To access locally:"
-echo "  kubectl -n $NAMESPACE port-forward svc/argocd-server 8080:80"
+echo "  kubectl -n $NAMESPACE port-forward svc/argocd-server 8080:443"
 
 if kubectl -n "$NAMESPACE" get secret argocd-initial-admin-secret >/dev/null 2>&1; then
   echo "Initial admin password:"

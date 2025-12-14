@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sample-service-a
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/jenshoffmann1331/aws-spring-microservices-lab
+    targetRevision: main
+    path: services/sample-service-a/chart
+    helm:
+      releaseName: sample-service-a
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sample-service-a
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

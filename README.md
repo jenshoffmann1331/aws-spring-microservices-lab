@@ -77,3 +77,20 @@ Argo-Client installieren unter Mac:
 ```bash
 brew install argocd
 ```
+
+
+Einen neuen Spring Service erstellen:
+
+```bash
+SERVICE_NAME=service-a
+PACKAGE_NAME=serviceA
+spring init \
+  --name="$SERVICE_NAME" \
+  --groupId=com.microlab \
+  --artifactId="$SERVICE_NAME" \
+  --packageName="com.microlab.$PACKAGE_NAME" \
+  --build=maven \
+  --language=java \
+  --dependencies=web,actuator \
+  app
+```

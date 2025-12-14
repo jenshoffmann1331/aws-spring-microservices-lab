@@ -1,0 +1,7 @@
+image:
+  repository: YOUR_ECR_REPO/sample-service-a
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8080

@@ -1,0 +1,58 @@
+name: Deploy ECR Repos (Elastic Container Registry)
+
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        type: string
+        required: true
+      environment:
+        type: string
+        required: true
+      region:
+        type: string
+        required: true
+    secrets:
+      AWS_ROLE_TO_ASSUME:
+        required: true
+      AWS_CFN_ROLE:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ inputs.region }}
+
+      - name: Deploy CloudFormation stack (network)
+        shell: bash
+        run: |
+          set -euo pipefail
+          
+          PROJECT_NAME="${{ inputs.project_name }}"
+          ENV="${{ inputs.environment }}"
+          REGION="${{ inputs.region }}"
+          STACK_NAME="${PROJECT_NAME}-${ENV}-network"
+          
+          aws cloudformation deploy \
+            --region "$REGION" \
+            --stack-name "$STACK_NAME" \
+            --template-file infra/cloudformation/ecr/ecr.yaml \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --role-arn "${{ secrets.AWS_CFN_ROLE }}" \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              ProjectName="$PROJECT_NAME" \
+              Environment="$ENV"

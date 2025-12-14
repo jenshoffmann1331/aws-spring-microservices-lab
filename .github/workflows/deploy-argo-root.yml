@@ -1,0 +1,55 @@
+name: Deploy Argo Root App
+
+on:
+  workflow_call:
+    inputs:
+      region:
+        type: string
+        required: true
+      cluster_name:
+        type: string
+        required: true
+      root_app_path:
+        type: string
+        required: false
+        default: infra/argo/applications/root.yaml
+    secrets:
+      AWS_ROLE_TO_ASSUME:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ inputs.region }}
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        env:
+          INPUT_REGION: ${{ inputs.region }}
+          INPUT_CLUSTER_NAME: ${{ inputs.cluster_name }}
+        run: |
+          aws eks update-kubeconfig \
+            --name "$INPUT_CLUSTER_NAME" \
+            --region "$INPUT_REGION"
+
+      - name: Apply Argo root application (App-of-Apps)
+        env:
+          ROOT_APP_PATH: ${{ inputs.root_app_path }}
+        run: |
+          test -f "$ROOT_APP_PATH"
+          kubectl apply -n argocd -f "$ROOT_APP_PATH"

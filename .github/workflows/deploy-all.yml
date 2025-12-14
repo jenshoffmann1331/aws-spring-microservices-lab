@@ -27,6 +27,16 @@ jobs:
       AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
       AWS_CFN_ROLE: ${{ secrets.AWS_CFN_ROLE }}
 
+  ecr:
+    uses: ./.github/workflows/deploy-ecr.yml
+    with:
+      project_name: ${{ inputs.project_name }}
+      environment: ${{ inputs.environment }}
+      region: ${{ inputs.region }}
+    secrets:
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      AWS_CFN_ROLE: ${{ secrets.AWS_CFN_ROLE }}
+
   eks:
     needs: network
     uses: ./.github/workflows/deploy-eks.yml
@@ -42,6 +52,15 @@ jobs:
   argocd:
     needs: eks
     uses: ./.github/workflows/deploy-argocd.yml
+    with:
+      region: ${{ inputs.region }}
+      cluster_name: ${{ format('{0}-{1}', inputs.project_name, inputs.environment) }}
+    secrets:
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
+  argo_root:
+    needs: argocd
+    uses: ./.github/workflows/deploy-argo-root.yml
     with:
       region: ${{ inputs.region }}
       cluster_name: ${{ format('{0}-{1}', inputs.project_name, inputs.environment) }}

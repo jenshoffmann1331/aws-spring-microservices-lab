@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "ECR repositories (one per service) with lifecycle + scan + immutability"
+
+Transform:
+  - AWS::LanguageExtensions
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: microservices-lab
+
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, test, prod]
+
+  Services:
+    Type: CommaDelimitedList
+    Default: "service-a"
+
+Resources:
+  # noinspection YamlFormatViolation
+  Fn::ForEach::EcrRepos:
+    - ServiceName
+    - !Ref Services
+    - EcrRepo${ServiceName}:
+        Type: AWS::ECR::Repository
+        Properties:
+          # Repo-Namen: project/env/service
+          RepositoryName: !Sub "${ProjectName}/${Environment}/${ServiceName}"
+
+          ImageTagMutability: IMMUTABLE
+
+          ImageScanningConfiguration:
+            ScanOnPush: true
+
+          EncryptionConfiguration:
+            EncryptionType: AES256
+
+          LifecyclePolicy:
+            LifecyclePolicyText: |
+              {
+                "rules": [
+                  {
+                    "rulePriority": 1,
+                    "description": "Keep last 2 images",
+                    "selection": {
+                      "tagStatus": "any",
+                      "countType": "imageCountMoreThan",
+                      "countNumber": 2
+                    },
+                    "action": { "type": "expire" }
+                  }
+                ]
+              }

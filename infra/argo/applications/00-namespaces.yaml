@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: namespaces
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/jenshoffmann1331/aws-spring-microservices-lab
+    targetRevision: main
+    path: infra/argo/bootstrap/namespaces
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

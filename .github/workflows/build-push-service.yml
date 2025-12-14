@@ -1,0 +1,95 @@
+name: Build & Push Microservice
+
+on:
+  workflow_call:
+    inputs:
+      region:
+        type: string
+        required: true
+      service_path:
+        type: string
+        required: true
+        description: Path like services/service-a
+      ecr_repo:
+        type: string
+        required: true
+        description: Full ECR repository URI like 123.dkr.ecr.eu-central-1.amazonaws.com/service-a
+      image_tag:
+        type: string
+        required: true
+    secrets:
+      AWS_ROLE_TO_ASSUME:
+        required: true
+
+permissions:
+  id-token: write
+  contents: write  # wir committen values.yaml zurück
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ inputs.region }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build image
+        env:
+          SERVICE_PATH: ${{ inputs.service_path }}
+          ECR_REPO: ${{ inputs.ecr_repo }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          docker build \
+            -f "$SERVICE_PATH/docker/Dockerfile" \
+            -t "$ECR_REPO:$IMAGE_TAG" \
+            "$SERVICE_PATH"
+
+      - name: Push image
+        env:
+          ECR_REPO: ${{ inputs.ecr_repo }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          docker push "$ECR_REPO:$IMAGE_TAG"
+
+      - name: Update Helm values.yaml with new tag
+        env:
+          SERVICE_PATH: ${{ inputs.service_path }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          VALUES_FILE="$SERVICE_PATH/chart/values.yaml"
+          test -f "$VALUES_FILE"
+
+          # image.tag: "..."
+          if grep -qE '^[[:space:]]*tag:[[:space:]]*' "$VALUES_FILE"; then
+            sed -i -E "s/^([[:space:]]*tag:[[:space:]]*).*/\1\"$IMAGE_TAG\"/" "$VALUES_FILE"
+          else
+            echo "No image.tag found in $VALUES_FILE"
+            exit 1
+          fi
+
+      - name: Commit chart change
+        env:
+          SERVICE_PATH: ${{ inputs.service_path }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+
+          git add "$SERVICE_PATH/chart/values.yaml"
+
+          # Nichts committen, wenn unverändert
+          if git diff --cached --quiet; then
+            echo "No chart change to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(${SERVICE_PATH##*/}): deploy image ${IMAGE_TAG}"
+          git push
