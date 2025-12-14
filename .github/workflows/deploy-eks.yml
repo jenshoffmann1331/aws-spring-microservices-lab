@@ -1,16 +1,27 @@
 name: Deploy EKS (CloudFormation)
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
+      project_name:
+        type: string
+        required: true
       environment:
-        description: "Environment name (dev/test/prod)"
+        type: string
         required: true
-        default: "dev"
       region:
-        description: "AWS region"
+        type: string
         required: true
-        default: "eu-central-1"
+      cluster_name:
+        type: string
+        required: false
+    secrets:
+      AWS_ROLE_TO_ASSUME:
+        required: true
+      AWS_CFN_ROLE:
+        required: true
+      CLUSTER_ADMIN_ARN:
+        required: true
 
 permissions:
   id-token: write
@@ -20,10 +31,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      PROJECT_NAME: microservices-lab
-      CLUSTER_NAME: microservices-lab-dev
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,12 +39,23 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ inputs.region || 'eu-central-1' }}
+          aws-region: ${{ inputs.region }}
 
       - name: Deploy CloudFormation stack (eks)
+        shell: bash
         run: |
-          ENV="${{ inputs.environment || 'dev' }}"
-          REGION="${{ inputs.region || 'eu-central-1' }}"
+          set -euo pipefail
+          
+          PROJECT_NAME="${{ inputs.project_name }}"
+          ENV="${{ inputs.environment }}"
+          REGION="${{ inputs.region }}"
+          
+          if [[ -n "${{ inputs.cluster_name }}" ]]; then
+            CLUSTER_NAME="${{ inputs.cluster_name }}"
+          else
+            CLUSTER_NAME="${PROJECT_NAME}-${ENV}"
+          fi
+          
           STACK_NAME="${PROJECT_NAME}-${ENV}-eks"
 
           aws cloudformation deploy \
@@ -45,7 +63,7 @@ jobs:
             --stack-name "$STACK_NAME" \
             --template-file infra/cloudformation/eks/eks.yaml \
             --capabilities CAPABILITY_NAMED_IAM \
-            --role-arn ${{ secrets.AWS_CFN_ROLE }} \
+            --role-arn "${{ secrets.AWS_CFN_ROLE }}" \
             --no-fail-on-empty-changeset \
             --parameter-overrides \
               ProjectName="$PROJECT_NAME" \

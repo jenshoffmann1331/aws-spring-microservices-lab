@@ -1,16 +1,17 @@
 name: Deploy Argo CD
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       region:
-        description: "AWS region"
+        type: string
         required: true
-        default: "eu-central-1"
       cluster_name:
-        description: "EKS cluster name"
+        type: string
         required: true
-        default: "microservices-lab-dev"
+    secrets:
+      AWS_ROLE_TO_ASSUME:
+        required: true
 
 permissions:
   id-token: write
@@ -19,9 +20,6 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      AWS_REGION: ${{ inputs.region || 'eu-central-1' }}
-      CLUSTER_NAME: ${{ inputs.cluster_name || 'microservices-lab-dev' }}
 
     steps:
       - name: Checkout
@@ -31,7 +29,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ inputs.region }}
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
@@ -40,5 +38,8 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Deploy Argo CD via Helm
+        env:
+          INPUT_REGION: ${{ inputs.region }}
+          INPUT_CLUSTER_NAME: ${{ inputs.cluster_name }}
         run: |
           ./scripts/deploy-argocd.sh

@@ -1,0 +1,49 @@
+name: Deploy All
+on:
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: Project name
+        default: microservices-lab
+      environment:
+        description: Environment [dev, test, prod]
+        default: dev
+      region:
+        description: AWS region
+        default: eu-central-1
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  network:
+    uses: ./.github/workflows/deploy-network.yml
+    with:
+      project_name: ${{ inputs.project_name }}
+      environment: ${{ inputs.environment }}
+      region: ${{ inputs.region }}
+    secrets:
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      AWS_CFN_ROLE: ${{ secrets.AWS_CFN_ROLE }}
+
+  eks:
+    needs: network
+    uses: ./.github/workflows/deploy-eks.yml
+    with:
+      project_name: ${{ inputs.project_name }}
+      environment: ${{ inputs.environment }}
+      region: ${{ inputs.region }}
+    secrets:
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      AWS_CFN_ROLE: ${{ secrets.AWS_CFN_ROLE }}
+      CLUSTER_ADMIN_ARN: ${{ secrets.CLUSTER_ADMIN_ARN }}
+
+  argocd:
+    needs: eks
+    uses: ./.github/workflows/deploy-argocd.yml
+    with:
+      region: ${{ inputs.region }}
+      cluster_name: ${{ format('{0}-{1}', inputs.project_name, inputs.environment) }}
+    secrets:
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}

@@ -1,16 +1,22 @@
 name: Deploy Network (CloudFormation)
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
+      project_name:
+        type: string
+        required: true
       environment:
-        description: "Environment name (dev/test/prod)"
-        required: false
-        default: "dev"
+        type: string
+        required: true
       region:
-        description: "AWS region"
-        required: false
-        default: "eu-central-1"
+        type: string
+        required: true
+    secrets:
+      AWS_ROLE_TO_ASSUME:
+        required: true
+      AWS_CFN_ROLE:
+        required: true
 
 permissions:
   id-token: write
@@ -20,9 +26,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      PROJECT_NAME: microservices-lab
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,12 +34,16 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ inputs.region || 'eu-central-1' }}
+          aws-region: ${{ inputs.region }}
 
       - name: Deploy CloudFormation stack (network)
+        shell: bash
         run: |
-          ENV="${{ inputs.environment || 'dev' }}"
-          REGION="${{ inputs.region || 'eu-central-1' }}"
+          set -euo pipefail
+          
+          PROJECT_NAME="${{ inputs.project_name }}"
+          ENV="${{ inputs.environment }}"
+          REGION="${{ inputs.region }}"
           STACK_NAME="${PROJECT_NAME}-${ENV}-network"
           
           aws cloudformation deploy \
@@ -44,7 +51,7 @@ jobs:
             --stack-name "$STACK_NAME" \
             --template-file infra/cloudformation/network/vpc.yaml \
             --capabilities CAPABILITY_NAMED_IAM \
-            --role-arn ${{ secrets.AWS_CFN_ROLE }} \
+            --role-arn "${{ secrets.AWS_CFN_ROLE }}" \
             --no-fail-on-empty-changeset \
             --parameter-overrides \
               ProjectName="$PROJECT_NAME" \
