@@ -1,6 +1,3 @@
-AWSTemplateFormatVersion: "2010-09-09"
-Description: "ECR repositories (one per service) with lifecycle + scan + immutability"
-
 Transform:
   - AWS::LanguageExtensions
 
@@ -16,19 +13,16 @@ Parameters:
 
   Services:
     Type: CommaDelimitedList
-    Default: "serviceA"
+    Default: "service-a"
 
 Resources:
-  # noinspection YamlFormatViolation
   Fn::ForEach::EcrRepos:
     - ServiceName
     - !Ref Services
-    - EcrRepo${ServiceName}:
+    - EcrRepo&{ServiceName}:
         Type: AWS::ECR::Repository
         Properties:
-          # Repo-Namen: project/env/service
           RepositoryName: !Sub "${ProjectName}/${Environment}/${ServiceName}"
-
           ImageTagMutability: IMMUTABLE
 
           ImageScanningConfiguration:
