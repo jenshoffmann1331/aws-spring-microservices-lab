@@ -16,7 +16,7 @@ Parameters:
 
   Services:
     Type: CommaDelimitedList
-    Default: "service-a"
+    Default: "serviceA"
 
 Resources:
   # noinspection YamlFormatViolation
