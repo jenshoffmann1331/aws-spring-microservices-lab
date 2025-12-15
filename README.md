@@ -94,3 +94,9 @@ spring init \
   --dependencies=web,actuator \
   app
 ```
+
+Delete most expensive stacks
+
+```bash
+./scripts/delete-stacks.sh microservices-lab-dev-eks microservices-lab-dev-network
+```
