@@ -1,0 +1,38 @@
+name: Build, Test & Push All Services
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: AWS region
+        default: eu-central-1
+  push:
+    branches: [ main ]
+    paths:
+      - "services/**"
+      - ".github/workflows/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  services:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service_path: services/service-a
+            ecr_repo_path: microservices-lab/dev/service-a
+          # add more services when needed
+          # ...
+
+    uses: ./.github/workflows/build-test-push-service.yml
+    with:
+      region: ${{ inputs.region || 'eu-central-1' }}
+      service_path: ${{ matrix.service_path }}
+      ecr_repo_path: ${{ matrix.ecr_repo_path }}
+      image_tag: ${{ github.sha }}
+    secrets:
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      ECR_BASE_URI: ${{ secrets.ECR_BASE_URI }}

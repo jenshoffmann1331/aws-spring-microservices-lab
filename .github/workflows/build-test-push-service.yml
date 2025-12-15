@@ -1,0 +1,82 @@
+name: Build, Test & Push Service
+
+on:
+  workflow_call:
+    inputs:
+      region:
+        type: string
+        required: true
+      service_path:
+        type: string
+        required: true
+        description: e.g. services/service-a
+      ecr_repo_path:
+        type: string
+        required: true
+        description: e.g. microservices-lab/dev/service-a
+      image_tag:
+        type: string
+        required: true
+        description: e.g. git sha or semver
+    secrets:
+      AWS_ROLE_TO_ASSUME:
+        required: true
+      ECR_BASE_URI:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build_test_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Run tests (Maven)
+        env:
+          SERVICE_PATH: ${{ inputs.service_path }}
+        run: |
+          mvn -f "$SERVICE_PATH/app/pom.xml" -q test
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ inputs.region }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        env:
+          SERVICE_PATH: ${{ inputs.service_path }}
+          ECR_BASE_URI: ${{ secrets.ECR_BASE_URI }}
+          ECR_REPO_PATH: ${{ inputs.ecr_repo_path }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          ECR_REPO_URI="${ECR_BASE_URI}/${ECR_REPO_PATH}"
+          
+          docker build \
+            -f "$SERVICE_PATH/docker/Dockerfile" \
+            -t "$ECR_REPO_URI:$IMAGE_TAG" \
+            "$SERVICE_PATH"
+
+      - name: Push Docker image
+        env:
+          ECR_BASE_URI: ${{ secrets.ECR_BASE_URI }}
+          ECR_REPO_PATH: ${{ inputs.ecr_repo_path }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          ECR_REPO_URI="${ECR_BASE_URI}/${ECR_REPO_PATH}"          
+          docker push "$ECR_REPO_URI:$IMAGE_TAG"
